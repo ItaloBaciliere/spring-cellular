@@ -12,6 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.jdbc.JdbcTestUtils;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @SpringBatchTest
 // @SpringBatchTest registers the JobLauncherTestUtils
@@ -26,6 +31,9 @@ class BillingJobApplicationTests {
 
 	@Autowired
 	private JobRepositoryTestUtils jobRepositoryTestUtils;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 
 	@BeforeEach
@@ -44,6 +52,9 @@ class BillingJobApplicationTests {
 		*  	[~/exercises] $ docker exec postgres psql
 		* 	-U postgres -c 'select * from BATCH_JOB_EXECUTION_PARAMS;'
 		* */
+
+		this.jobRepositoryTestUtils.removeJobExecutions();
+		JdbcTestUtils.deleteFromTables(this.jdbcTemplate, "BILLING_DATA");
 	}
 
 	@Test
@@ -51,15 +62,18 @@ class BillingJobApplicationTests {
 
 		// given
 		JobParameters jobParameters = jobLauncherTestUtils.getUniqueJobParametersBuilder()
-				.addString("input.file", "/some/input/file")
+				.addString("input.file", "src/main/resources/billing-2023-01.csv")
 				.toJobParameters();
 
 		// when
 		JobExecution jobExecution = this.jobLauncherTestUtils.launchJob(jobParameters);
 
 		// then
-		Assertions.assertTrue(output.getOut().contains("processing billing information from file /some/input/file"));
+//		Assertions.assertTrue(output.getOut().contains("processing billing information from file /some/input/file"));
+//		Assertions.assertEquals(ExitStatus.COMPLETED, jobExecution.getExitStatus());
 		Assertions.assertEquals(ExitStatus.COMPLETED, jobExecution.getExitStatus());
+		Assertions.assertTrue(Files.exists(Paths.get("staging", "billing-2023-01.csv")));
+		Assertions.assertEquals(1000, JdbcTestUtils.countRowsInTable(jdbcTemplate, "BILLING_DATA"));
 	}
 
 }
