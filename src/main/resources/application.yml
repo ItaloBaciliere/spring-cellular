@@ -1,0 +1,17 @@
+application:
+  title: billing-job
+  version: V1
+
+spring:
+  application:
+    name: billing-job
+  datasource:
+    url: jdbc:h2:mem:mydb
+    # jdbc:postgresql://localhost:5432/postgres
+    username: sa
+    #postgres
+    password: password
+    # postgres
+    driverClassName: org.h2.Driver
+  jpa:
+    spring.jpa.database-platform: org.hibernate.dialect.H2Dialect
